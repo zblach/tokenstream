@@ -123,7 +123,8 @@ class TokenStream:
                 # Handle signs without a space between the sign and the number
                 #   eg. "4-3" => [4, "-", 3], not [4, -3]
                 #   eg. "+3+3" => [3, "+", 3], not [3, 3] (or ["+", 3, "+", 3] or ["+", 3, 3])
-                # We still want signed numbers to have a higher match precedence, and it's not legal to have two numbers in a row, so we can safely assume that an extra sign is an operator.
+                # We still want signed numbers to have a higher match precedence, so we can safely assume that an extra sign is an operator.
+                # The fact that the grammar doesn't allow for two numbers in sequence is a parser concern, not a tokenizer concern.
                 case "number" if previousType == "number" and tok[0] in ("-", "+"):
                     yield Operator(tok[0], start, start + 1)
                     yield Number(float(tok[1:]), start + 1, end)

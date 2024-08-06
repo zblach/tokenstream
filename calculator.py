@@ -40,7 +40,7 @@ def evaluate(expression: str) -> float:
         print(
             rf"""Invalid expression!
 > {expression}
-> {' ' * e.token.start}{'^' * (e.token.end - e.token.start)}"""
+  {' ' * e.token.start}{'^' * (e.token.end - e.token.start)}"""
         )
         raise e
 
@@ -171,5 +171,11 @@ def _base(tokens: TokenStream) -> float:
 
 if __name__ == "__main__":
     import unittest
+    from test_calculator import TestEvaluate
+    from test_tokenizer import TestTokenStream
 
-    unittest.main()
+    loader = unittest.TestLoader()
+    loader.loadTestsFromTestCase(TestEvaluate)
+    loader.loadTestsFromTestCase(TestTokenStream)
+
+    unittest.main(testRunner=unittest.TextTestRunner(verbosity=2), testLoader=loader)
