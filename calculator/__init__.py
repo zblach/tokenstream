@@ -1,6 +1,4 @@
-from typing import Optional
-
-from tokenizer import TokenError, UnexpectedTokenError
+from tokenizer import Invalid, InvalidTokenError, TokenError, UnexpectedTokenError
 from .tokenizer import (
     Operator,
     Number,
@@ -11,7 +9,7 @@ from .tokenizer import (
 
 # context-free grammar for the parsing logic
 
-# expression -> term {("+" | "-") term}
+# expression -> term {("+" | "-") expression}
 #       term -> factor {("*" | "/") factor}
 #     factor -> base {("**" | "^") base}
 #       base -> number | {"-"} "(" expression ")"
@@ -34,8 +32,13 @@ def evaluate(expression: str) -> float:
     tokens = Tokenizer(expression)
     try:
         result = _expression(tokens)
-        if (token := next(tokens, None)) != None:
-            raise UnexpectedTokenError(token)
+        match (token := next(tokens, None)):
+            case None:
+                pass
+            case Invalid():
+                raise InvalidTokenError(token)
+            case _:
+                raise UnexpectedTokenError(token)
     except TokenError as e:
         print(
             rf"""Invalid expression!
@@ -47,13 +50,12 @@ def evaluate(expression: str) -> float:
     return result
 
 
-def _expression(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
+def _expression(tokens: Tokenizer) -> float:
     """
     Parse and evaluate an expression, handling addition and subtraction.
 
     Args:
         tokens (TokenStream): An iterator of tokens representing the expression.
-        intermediate (Optional[float]): An intermediate value used in recursive parsing (default is None).
 
     Returns:
         float: The result of the parsed expression.
@@ -62,28 +64,26 @@ def _expression(tokens: Tokenizer, intermediate: Optional[float] = None) -> floa
         UnexpectedEndOfExpressionError: If there are unexpected tokens at the end of the expression.
         UnexpectedTokenError: If there is an invalid token in the expression.
     """
-    if intermediate is None:
-        intermediate = _term(tokens)
+    term = _term(tokens)
 
     match token := next(tokens, None):
         case Operator("+"):
-            return _expression(tokens, intermediate + _term(tokens))
+            return term + _expression(tokens)
         case Operator("-"):
-            return _expression(tokens, intermediate - _term(tokens))
+            return term - _expression(tokens)
         case None:
-            return intermediate
+            return term
         case _:
             tokens.reinsert(token)
-            return intermediate
+            return term
 
 
-def _term(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
+def _term(tokens: Tokenizer) -> float:
     """
     Parse and evaluate a term, handling multiplication and division.
 
     Args:
         tokens (TokenStream): An iterator of tokens representing the expression.
-        intermediate (Optional[float]): An intermediate value used in recursive parsing (default is None).
 
     Returns:
         float: The result of the parsed term.
@@ -92,28 +92,26 @@ def _term(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
         UnexpectedEndOfExpressionError: If there are unexpected tokens at the end of the expression.
         UnexpectedTokenError: If there is an invalid token in the expression.
     """
-    if intermediate is None:
-        intermediate = _factor(tokens)
+    factor = _factor(tokens)
 
     match token := next(tokens, None):
         case Operator("*"):
-            return _term(tokens, intermediate * _factor(tokens))
+            return factor * _factor(tokens)
         case Operator("/"):
-            return _term(tokens, intermediate / _factor(tokens))
+            return factor / _factor(tokens)
         case None:
-            return intermediate
+            return factor
         case _:
             tokens.reinsert(token)
-            return intermediate
+            return factor
 
 
-def _factor(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
+def _factor(tokens: Tokenizer) -> float:
     """
     Parse and evaluate a factor, handling exponentiation.
 
     Args:
         tokens (TokenStream): An iterator of tokens representing the expression.
-        intermediate (Optional[float]): An intermediate value used in recursive parsing (default is None).
 
     Returns:
         float: The result of the parsed factor.
@@ -122,17 +120,16 @@ def _factor(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
         UnexpectedEndOfExpressionError: If there are unexpected tokens at the end of the expression.
         UnexpectedTokenError: If there is an invalid token in the expression.
     """
-    if intermediate is None:
-        intermediate = _base(tokens)
+    base = _base(tokens)
 
     match token := next(tokens, None):
         case Operator("**") | Operator("^"):
-            return intermediate ** _factor(tokens)
+            return base ** _factor(tokens)
         case None:
-            return intermediate
+            return base
         case _:
             tokens.reinsert(token)
-            return intermediate
+            return base
 
 
 def _base(tokens: Tokenizer) -> float:

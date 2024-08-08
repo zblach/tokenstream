@@ -7,7 +7,7 @@ from calculator import (
     Parenthesis,
     Tokenizer,
 )
-from tokenizer import InvalidTokenError
+from tokenizer import Invalid
 
 
 def tokens(expression: str) -> list[Union[str, float]]:
@@ -57,9 +57,8 @@ class TestTokenStream(unittest.TestCase):
 
     def test_invalid_token(self):
         expression = "3 + 4 & 10"
-        with self.assertRaises(InvalidTokenError) as context:
-            list(Tokenizer(expression))
-        self.assertEqual(str(context.exception.token.value), "&")
+        tokens = list(Tokenizer(expression))
+        self.assertIsInstance(tokens[3], Invalid)
 
     def test_empty_expression(self):
         expression = ""
@@ -81,7 +80,8 @@ class TestTokenStream(unittest.TestCase):
         self.assertEqual(tokens(expression), expected_tokens)
 
     def test_typed_tokens(self):
-        expression = "3 + 4 - -5 * ( 1e50 ** 0.001 )"
+        self.maxDiff = 10000
+        expression = "3 + 4 - -5 * abcde ( 1e50 ** 0.001 )"
         expected_tokens = [
             Number(3.0, 0, 1),
             Operator("+", 2, 3),
@@ -89,10 +89,11 @@ class TestTokenStream(unittest.TestCase):
             Operator("-", 6, 7),
             Number(-5.0, 8, 10),
             Operator("*", 11, 12),
-            Parenthesis("(", 13, 14),
-            Number(1e50, 15, 19),
-            Operator("**", 20, 22),
-            Number(0.001, 23, 28),
-            Parenthesis(")", 29, 30),
+            Invalid("abcde", 13, 18),
+            Parenthesis("(", 19, 20),
+            Number(1e50, 21, 25),
+            Operator("**", 26, 28),
+            Number(0.001, 29, 34),
+            Parenthesis(")", 35, 36),
         ]
         self.assertEqual(list(Tokenizer(expression)), expected_tokens)

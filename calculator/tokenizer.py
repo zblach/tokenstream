@@ -1,5 +1,5 @@
 import re
-from typing import Iterator, Literal, Optional, TypeVar, Union, get_args
+from typing import Iterator, Literal, LiteralString, Optional, TypeVar, Union, get_args
 
 import tokenizer
 
@@ -57,6 +57,9 @@ class Tokenizer(tokenizer.TokenStream[TokenType]):
         re.VERBOSE,
     )
 
+    OPERATORS: tuple[LiteralString, ...] = get_args(Operators)
+    PARENTHESES: tuple[LiteralString, ...] = get_args(Parentheses)
+
     _lookahead: Optional[TokenType] = None
 
     def _tokenize(self, expression: str) -> Iterator[TokenType]:
@@ -89,14 +92,14 @@ class Tokenizer(tokenizer.TokenStream[TokenType]):
                 case "number":
                     yield Number(float(tok), start, end)
 
-                case "operator" if tok in get_args(Operators):
+                case "operator" if tok in Tokenizer.OPERATORS:
                     yield Operator(tok, start, end)  # type: ignore
 
-                case "parenthesis" if tok in get_args(Parentheses):
+                case "parenthesis" if tok in Tokenizer.PARENTHESES:
                     yield Parenthesis(tok, start, end)  # type: ignore
 
                 case "invalid" | _:
-                    raise tokenizer.InvalidTokenError(Invalid(tok, start, end))
+                    yield Invalid(tok, start, end)
 
             previousType = typ
 

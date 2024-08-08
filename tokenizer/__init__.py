@@ -13,7 +13,7 @@ class Token(ABC, Generic[SymbolLiteral]):
     A token representing a single element in an arithmetic expression.
 
     Args:
-        value (TokenValue): The value of the token.
+        value (SymbolLiteral): The value of the token.
         start (int): The starting index of the token in the expression.
         end (int): The ending index of the token in the expression.
     """
