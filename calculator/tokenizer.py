@@ -1,25 +1,12 @@
 import re
-from abc import ABC
-from dataclasses import dataclass
-from typing import Generic, Iterator, Literal, Optional, TypeVar, Union, get_args
+from typing import Iterator, Literal, Optional, TypeVar, Union, get_args
 
-FLOAT_PATTERN = re.compile(r"[-+]?\d*\.?\d+([eE][-+]?\d+)?")
+import tokenizer
+
+from tokenizer import FLOAT_PATTERN, Number, Invalid, Token
+
 
 # Define the regular expression pattern for tokenization
-TOKEN_PATTERN = re.compile(
-    rf"""
-        (?:
-            (?P<number>{FLOAT_PATTERN.pattern})   # Named group for numbers (integer or floating-point)
-            |
-            (?P<operator>\*\*|[+\-*/\^])          # Named group for operators
-            |
-            (?P<parenthesis>[()])                 # Named group for parentheses
-            |
-            (?P<invalid>\S+)                      # Named group for any other non-whitespace characters
-        )
-    """,
-    re.VERBOSE,
-)
 
 # String literal types for operators and parentheses, used for type hinting
 Operators = Literal["+", "-", "*", "/", "**", "^"]
@@ -29,37 +16,10 @@ Parentheses = Literal["(", ")"]
 TokenValue = TypeVar("TokenValue", bound=Union[Operators, Parentheses, float, str])
 
 
-# Define the token classes
-@dataclass(frozen=True)
-class Token(ABC, Generic[TokenValue]):
-    """
-    A token representing a single element in an arithmetic expression.
-
-    Args:
-        value (TokenValue): The value of the token.
-        start (int): The starting index of the token in the expression.
-        end (int): The ending index of the token in the expression.
-    """
-
-    value: TokenValue
-    start: int
-    end: int
-
-    def __post_init__(self):
-        if self.end < self.start:
-            raise ValueError("End index cannot be less than start index")
-
-
-class Number(Token[float]): ...
-
-
 class Operator(Token[Operators]): ...
 
 
 class Parenthesis(Token[Parentheses]): ...
-
-
-class Invalid(Token[str]): ...
 
 
 # Union of all token types (TODO: get subclasses of Token dynamically?)
@@ -67,22 +27,6 @@ TokenType = Number | Operator | Parenthesis | Invalid
 
 
 # Exceptions for tokenization and parsing errors
-
-
-class TokenError(ValueError):
-    def __init__(self, msg: str, token: TokenType):
-        self.token = token
-        super().__init__(f"{msg}: {token}")
-
-
-class InvalidTokenError(TokenError):
-    def __init__(self, token: TokenType):
-        super().__init__("Invalid token", token)
-
-
-class UnexpectedTokenError(ValueError):
-    def __init__(self, token: TokenType):
-        super().__init__("Unexpected token", token)
 
 
 class UnexpectedEndOfExpressionError(ValueError):
@@ -93,14 +37,27 @@ class UnexpectedEndOfExpressionError(ValueError):
 # Token stream
 
 
-class TokenStream:
+class Tokenizer(tokenizer.TokenStream[TokenType]):
     """
     A stream of tokens representing an arithmetic expression.
     """
 
-    def __init__(self, expression: str):
-        self._tokens: Iterator[TokenType] = self._tokenize(expression)
-        self._lookahead: Optional[TokenType] = None
+    GRAMMAR = re.compile(
+        rf"""
+            (?:
+                (?P<number>{FLOAT_PATTERN.pattern})   # Named group for numbers (integer or floating-point)
+                |
+                (?P<operator>\*\*|[+\-*/\^])          # Named group for operators
+                |
+                (?P<parenthesis>[()])                 # Named group for parentheses
+                |
+                (?P<invalid>\S+)                      # Named group for any other non-whitespace characters
+            )
+        """,
+        re.VERBOSE,
+    )
+
+    _lookahead: Optional[TokenType] = None
 
     def _tokenize(self, expression: str) -> Iterator[TokenType]:
         """
@@ -116,7 +73,7 @@ class TokenStream:
             InvalidTokenError: If an invalid token is encountered.
         """
         previousType = ""
-        for match in TOKEN_PATTERN.finditer(expression):
+        for match in Tokenizer.GRAMMAR.finditer(expression):
             tok, typ = match.group(), match.lastgroup
             start, end = match.span()
             match typ:
@@ -139,12 +96,9 @@ class TokenStream:
                     yield Parenthesis(tok, start, end)  # type: ignore
 
                 case "invalid" | _:
-                    raise InvalidTokenError(Invalid(tok, start, end))
+                    raise tokenizer.InvalidTokenError(Invalid(tok, start, end))
 
             previousType = typ
-
-    def __iter__(self) -> "TokenStream":
-        return self
 
     def __next__(self) -> TokenType:
         if self._lookahead is not None:
@@ -160,5 +114,7 @@ class TokenStream:
             Token: The token to push back to the front.
         """
         if self._lookahead is not None:
-            raise TokenError("Cannot reinsert more than one token", self._lookahead)
+            raise tokenizer.TokenError(
+                "Cannot reinsert more than one token", self._lookahead
+            )
         self._lookahead = token

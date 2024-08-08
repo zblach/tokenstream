@@ -1,12 +1,12 @@
 from typing import Optional
-from tokenizer import (
-    Number,
+
+from tokenizer import TokenError, UnexpectedTokenError
+from .tokenizer import (
     Operator,
+    Number,
     Parenthesis,
-    TokenError,
-    TokenStream,
+    Tokenizer,
     UnexpectedEndOfExpressionError,
-    UnexpectedTokenError,
 )
 
 # context-free grammar for the parsing logic
@@ -31,7 +31,7 @@ def evaluate(expression: str) -> float:
     Raises:
         UnexpectedTokenError: If there are one or more unexpected tokens at the end of the expression.
     """
-    tokens = TokenStream(expression)
+    tokens = Tokenizer(expression)
     try:
         result = _expression(tokens)
         if (token := next(tokens, None)) != None:
@@ -47,7 +47,7 @@ def evaluate(expression: str) -> float:
     return result
 
 
-def _expression(tokens: TokenStream, intermediate: Optional[float] = None) -> float:
+def _expression(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
     """
     Parse and evaluate an expression, handling addition and subtraction.
 
@@ -77,7 +77,7 @@ def _expression(tokens: TokenStream, intermediate: Optional[float] = None) -> fl
             return intermediate
 
 
-def _term(tokens: TokenStream, intermediate: Optional[float] = None) -> float:
+def _term(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
     """
     Parse and evaluate a term, handling multiplication and division.
 
@@ -107,7 +107,7 @@ def _term(tokens: TokenStream, intermediate: Optional[float] = None) -> float:
             return intermediate
 
 
-def _factor(tokens: TokenStream, intermediate: Optional[float] = None) -> float:
+def _factor(tokens: Tokenizer, intermediate: Optional[float] = None) -> float:
     """
     Parse and evaluate a factor, handling exponentiation.
 
@@ -135,7 +135,7 @@ def _factor(tokens: TokenStream, intermediate: Optional[float] = None) -> float:
             return intermediate
 
 
-def _base(tokens: TokenStream) -> float:
+def _base(tokens: Tokenizer) -> float:
     """
     Parse and evaluate a base value, which can be a number or a parenthesized expression.
 
@@ -167,15 +167,3 @@ def _base(tokens: TokenStream) -> float:
             raise UnexpectedEndOfExpressionError()
         case _:
             raise UnexpectedTokenError(token)
-
-
-if __name__ == "__main__":
-    import unittest
-    from test_calculator import TestEvaluate
-    from test_tokenizer import TestTokenStream
-
-    loader = unittest.TestLoader()
-    loader.loadTestsFromTestCase(TestEvaluate)
-    loader.loadTestsFromTestCase(TestTokenStream)
-
-    unittest.main(testRunner=unittest.TextTestRunner(verbosity=2), testLoader=loader)

@@ -1,18 +1,17 @@
 import unittest
 from typing import Union
 
-from tokenizer import (
-    Invalid,
+from calculator import (
     Number,
     Operator,
     Parenthesis,
-    TokenStream,
-    InvalidTokenError,
+    Tokenizer,
 )
+from tokenizer import InvalidTokenError
 
 
 def tokens(expression: str) -> list[Union[str, float]]:
-    return [v.value for v in TokenStream(expression)]
+    return [v.value for v in Tokenizer(expression)]
 
 
 class TestTokenStream(unittest.TestCase):
@@ -59,7 +58,7 @@ class TestTokenStream(unittest.TestCase):
     def test_invalid_token(self):
         expression = "3 + 4 & 10"
         with self.assertRaises(InvalidTokenError) as context:
-            list(TokenStream(expression))
+            list(Tokenizer(expression))
         self.assertEqual(str(context.exception.token.value), "&")
 
     def test_empty_expression(self):
@@ -96,4 +95,4 @@ class TestTokenStream(unittest.TestCase):
             Number(0.001, 23, 28),
             Parenthesis(")", 29, 30),
         ]
-        self.assertEqual(list(TokenStream(expression)), expected_tokens)
+        self.assertEqual(list(Tokenizer(expression)), expected_tokens)

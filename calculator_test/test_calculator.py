@@ -1,10 +1,10 @@
 import unittest
 from calculator import evaluate
-from tokenizer import (
-    InvalidTokenError,
+from calculator import (
     UnexpectedEndOfExpressionError,
     UnexpectedTokenError,
 )
+from tokenizer import InvalidTokenError
 
 
 # Test class
