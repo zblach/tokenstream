@@ -1,15 +1,19 @@
+from calculator.tokenizer import UnexpectedEndOfExpressionError
+from .tokenizer import Operator, Tokenizer
+from tokenizer import (
+    Invalid,
+    InvalidTokenError,
+    Number,
+    UnexpectedTokenError,
+)
+from collections import deque
+from typing import Deque
+
 # context-free grammar for reverse polish notation
 
 # expression -> expression expression operand | number
-# operand -> + | - | * | /
-# number -> FLOAT_PATTERN
-
-
-from calculator.tokenizer import UnexpectedEndOfExpressionError
-from .tokenizer import Operator, Tokenizer
-from tokenizer import Number, TokenError, UnexpectedTokenError
-from collections import deque
-from typing import Deque
+#    operand -> "+" | "-" | "*" | "/"
+#     number -> FLOAT_PATTERN
 
 
 def evaluate(expression: str) -> float:
@@ -23,35 +27,31 @@ def evaluate(expression: str) -> float:
         float: The result of the evaluated expression.
 
     Raises:
-        UnexpectedTokenError: If there are one or more unexpected tokens at the end of the expression.
+        InvalidTokenError: If an invalid token is encountered.
+        UnexpectedTokenError: If we encounter a token where it's not expected (i.e. insufficient values for operation).
+        UnexpectedEndOfExpressionError: If the expression ends unexpectedly (i.e. unprocessed values).
     """
 
     values: Deque[float] = deque()
-    try:
-        for token in Tokenizer(expression):
-            match token:
-                case Number(value):
-                    values.append(value)
-                case Operator(operator) if len(values) >= 2:
-                    right, left = values.pop(), values.pop()
-                    match operator:
-                        case "+":
-                            values.append(left + right)
-                        case "-":
-                            values.append(left - right)
-                        case "*":
-                            values.append(left * right)
-                        case "/":
-                            values.append(left / right)
-                case _:
-                    raise UnexpectedTokenError(token)
-    except TokenError as e:
-        print(
-            rf"""Invalid expression!
-> {expression}
-  {' ' * e.token.start}{'^' * (e.token.end - e.token.start)}"""
-        )
-        raise e
+    for token in Tokenizer(expression):
+        match token:
+            case Number(value):
+                values.append(value)
+            case Operator(operator) if len(values) >= 2:
+                right, left = values.pop(), values.pop()
+                match operator:
+                    case "+":
+                        values.append(left + right)
+                    case "-":
+                        values.append(left - right)
+                    case "*":
+                        values.append(left * right)
+                    case "/":
+                        values.append(left / right)
+            case Invalid():
+                raise InvalidTokenError(token)
+            case _:
+                raise UnexpectedTokenError(token)
 
     if len(values) != 1:
         raise UnexpectedEndOfExpressionError()

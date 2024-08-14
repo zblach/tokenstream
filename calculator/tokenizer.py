@@ -1,5 +1,14 @@
 import re
-from typing import Iterator, Literal, LiteralString, Optional, TypeVar, Union, get_args
+from typing import (
+    Iterator,
+    Literal,
+    LiteralString,
+    Optional,
+    TypeVar,
+    Union,
+    get_args,
+    cast,
+)
 
 import tokenizer
 
@@ -8,7 +17,7 @@ from tokenizer import FLOAT_PATTERN, Number, Invalid, Token
 
 # Define the regular expression pattern for tokenization
 
-# String literal types for operators and parentheses, used for type hinting
+# String literal types for operators and parentheses, used for typing
 Operators = Literal["+", "-", "*", "/", "**", "^"]
 Parentheses = Literal["(", ")"]
 
@@ -93,10 +102,10 @@ class Tokenizer(tokenizer.TokenStream[TokenType]):
                     yield Number(float(tok), start, end)
 
                 case "operator" if tok in Tokenizer.OPERATORS:
-                    yield Operator(tok, start, end)  # type: ignore
+                    yield Operator(cast(Operators, tok), start, end)
 
                 case "parenthesis" if tok in Tokenizer.PARENTHESES:
-                    yield Parenthesis(tok, start, end)  # type: ignore
+                    yield Parenthesis(cast(Parentheses, tok), start, end)
 
                 case "invalid" | _:
                     yield Invalid(tok, start, end)

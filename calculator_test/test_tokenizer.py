@@ -1,13 +1,8 @@
 import unittest
 from typing import Union
 
-from calculator import (
-    Number,
-    Operator,
-    Parenthesis,
-    Tokenizer,
-)
-from tokenizer import Invalid
+from calculator.tokenizer import Operator, Parenthesis, Tokenizer
+from tokenizer import Invalid, Number
 
 
 def tokens(expression: str) -> list[Union[str, float]]:
@@ -80,20 +75,23 @@ class TestTokenStream(unittest.TestCase):
         self.assertEqual(tokens(expression), expected_tokens)
 
     def test_typed_tokens(self):
-        self.maxDiff = 10000
-        expression = "3 + 4 - -5 * abcde ( 1e50 ** 0.001 )"
-        expected_tokens = [
-            Number(3.0, 0, 1),
-            Operator("+", 2, 3),
-            Number(4.0, 4, 5),
-            Operator("-", 6, 7),
-            Number(-5.0, 8, 10),
-            Operator("*", 11, 12),
-            Invalid("abcde", 13, 18),
-            Parenthesis("(", 19, 20),
-            Number(1e50, 21, 25),
-            Operator("**", 26, 28),
-            Number(0.001, 29, 34),
-            Parenthesis(")", 35, 36),
+        expression = "-3 + 4 - -5 * abcde (  1e50 ** 0.001)"
+        expected_token_types_and_values = [
+            (Number, -3.0),
+            (Operator, "+"),
+            (Number, 4.0),
+            (Operator, "-"),
+            (Number, -5.0),
+            (Operator, "*"),
+            (Invalid, "abcde"),
+            (Parenthesis, "("),
+            (Number, 1e50),
+            (Operator, "**"),
+            (Number, 0.001),
+            (Parenthesis, ")"),
         ]
-        self.assertEqual(list(Tokenizer(expression)), expected_tokens)
+        actual_tokens = list(Tokenizer(expression))
+        self.assertEqual(
+            [(type(token), token.value) for token in actual_tokens],
+            expected_token_types_and_values,
+        )

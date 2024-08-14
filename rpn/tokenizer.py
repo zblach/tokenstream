@@ -1,8 +1,7 @@
 import re
-from typing import Iterator, Literal, get_args
+from typing import Final, Iterator, Literal, Tuple, final, get_args
 from tokenizer import (
     FLOAT_PATTERN,
-    InvalidTokenError,
     Number,
     Token,
     TokenStream,
@@ -18,10 +17,11 @@ class Operator(Token[Operators]): ...
 TokenType = Number | Operator | Invalid
 
 
+@final
 class Tokenizer(TokenStream[TokenType]):
     # this grammar is a bit simpler, as it does require spaces. It cannot afford ambiguity with leading operators.
     #   e.g. "1 + 2 -3 4" cannot be easily disambiguated from "1 + 2 - 3 4" without fully parsing the expression.
-    GRAMMAR = re.compile(
+    GRAMMAR: Final[re.Pattern[str]] = re.compile(
         rf"""
         (?:
             (?P<number>{FLOAT_PATTERN.pattern})
@@ -34,6 +34,8 @@ class Tokenizer(TokenStream[TokenType]):
         re.VERBOSE,
     )
 
+    OPERATORS: Final[Tuple[str]] = get_args(Operators)
+
     def _tokenize(self, expression: str) -> Iterator[TokenType]:
         for match in Tokenizer.GRAMMAR.finditer(expression):
             start, end = match.span()
@@ -41,7 +43,7 @@ class Tokenizer(TokenStream[TokenType]):
             match match.lastgroup:
                 case "number":
                     yield Number(float(val), start, end)
-                case "operator" if val in get_args(Operators):
+                case "operator" if val in Tokenizer.OPERATORS:
                     yield Operator(val, start, end)  # type: ignore
-                case "invalid" | _:
-                    raise InvalidTokenError(Invalid(val, start, end))
+                case _:
+                    yield Invalid(val, start, end)

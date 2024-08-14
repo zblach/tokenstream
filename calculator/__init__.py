@@ -1,7 +1,7 @@
 from tokenizer import Invalid, InvalidTokenError, TokenError, UnexpectedTokenError
 from .tokenizer import (
-    Operator,
     Number,
+    Operator,
     Parenthesis,
     Tokenizer,
     UnexpectedEndOfExpressionError,
