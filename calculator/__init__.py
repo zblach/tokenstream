@@ -7,7 +7,7 @@ from .tokenizer import (
     UnexpectedEndOfExpressionError,
 )
 
-# context-free grammar for the parsing logic
+# context-free grammar for the arithmetic operation parsing logic
 
 # expression -> term {("+" | "-") expression}
 #       term -> factor {("*" | "/") factor}
@@ -27,6 +27,8 @@ def evaluate(expression: str) -> float:
         float: The result of the evaluated expression.
 
     Raises:
+        InvalidTokenError: If an invalid token is encountered.
+        UnexpectedEndOfExpressionError: If the expression ends unexpectedly (i.e., insufficient values for operation, mismatched brackets, etc.).
         UnexpectedTokenError: If there are one or more unexpected tokens at the end of the expression.
     """
     tokens = Tokenizer(expression)
@@ -41,7 +43,7 @@ def evaluate(expression: str) -> float:
                 raise UnexpectedTokenError(token)
     except TokenError as e:
         print(
-            rf"""Invalid expression!
+            rf"""Invalid expression! {e}
 > {expression}
   {' ' * e.token.start}{'^' * (e.token.end - e.token.start)}"""
         )

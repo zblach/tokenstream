@@ -1,5 +1,5 @@
 import re
-from typing import Final, Iterator, Literal, Tuple, final, get_args
+from typing import Final, Iterator, Literal, Tuple, final, get_args, cast
 from tokenizer import (
     FLOAT_PATTERN,
     Number,
@@ -34,7 +34,7 @@ class Tokenizer(TokenStream[TokenType]):
         re.VERBOSE,
     )
 
-    OPERATORS: Final[Tuple[str]] = get_args(Operators)
+    OPERATORS: Final[Tuple[str, ...]] = get_args(Operators)
 
     def _tokenize(self, expression: str) -> Iterator[TokenType]:
         for match in Tokenizer.GRAMMAR.finditer(expression):
@@ -44,6 +44,6 @@ class Tokenizer(TokenStream[TokenType]):
                 case "number":
                     yield Number(float(val), start, end)
                 case "operator" if val in Tokenizer.OPERATORS:
-                    yield Operator(val, start, end)  # type: ignore
+                    yield Operator(cast(Operators, val), start, end)
                 case _:
                     yield Invalid(val, start, end)

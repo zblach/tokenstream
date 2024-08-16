@@ -10,7 +10,7 @@ SymbolLiteral = TypeVar("SymbolLiteral")
 @dataclass(frozen=True)
 class Token(ABC, Generic[SymbolLiteral]):
     """
-    A token representing a single element in an arithmetic expression.
+    A token representing a single element in a language.
 
     Args:
         value (SymbolLiteral): The value of the token.

@@ -10,27 +10,25 @@ from typing import (
     cast,
 )
 
-import tokenizer
-
-from tokenizer import FLOAT_PATTERN, Number, Invalid, Token
-
-
-# Define the regular expression pattern for tokenization
+from tokenizer import FLOAT_PATTERN, TokenStream, Number, Invalid, Token, TokenError
 
 # String literal types for operators and parentheses, used for typing
-Operators = Literal["+", "-", "*", "/", "**", "^"]
-Parentheses = Literal["(", ")"]
 
-# The actual token value type, which can be a number, operator, or parenthesis. str is used for invalid tokens.
-TokenValue = TypeVar("TokenValue", bound=Union[Operators, Parentheses, float, str])
+
+Operators = Literal["+", "-", "*", "/", "**", "^"]
 
 
 class Operator(Token[Operators]): ...
 
 
+Parentheses = Literal["(", ")"]
+
+
 class Parenthesis(Token[Parentheses]): ...
 
 
+# The actual token value type, which can be a number, operator, or parenthesis. str is used for invalid tokens.
+TokenValue = TypeVar("TokenValue", bound=Union[Operators, Parentheses, float, str])
 # Union of all token types (TODO: get subclasses of Token dynamically?)
 TokenType = Number | Operator | Parenthesis | Invalid
 
@@ -43,10 +41,8 @@ class UnexpectedEndOfExpressionError(ValueError):
         super().__init__("Unexpected end of expression")
 
 
-# Token stream
-
-
-class Tokenizer(tokenizer.TokenStream[TokenType]):
+# Tokenizer
+class Tokenizer(TokenStream[TokenType]):
     """
     A stream of tokens representing an arithmetic expression.
     """
@@ -126,7 +122,5 @@ class Tokenizer(tokenizer.TokenStream[TokenType]):
             Token: The token to push back to the front.
         """
         if self._lookahead is not None:
-            raise tokenizer.TokenError(
-                "Cannot reinsert more than one token", self._lookahead
-            )
+            raise TokenError("Cannot reinsert more than one token", self._lookahead)
         self._lookahead = token
