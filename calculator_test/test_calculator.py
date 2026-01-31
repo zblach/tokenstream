@@ -30,7 +30,7 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(evaluate("-3 * -4"), -3 * -4)
         self.assertEqual(evaluate("3 * -4"), 3 * -4)
         self.assertEqual(evaluate("-(-3)"), -(-3))
-        self.assertEqual(evaluate("--3"), 3)
+        self.assertEqual(evaluate("--3"), --3)
 
     def test_order_of_operations(self):
         self.assertEqual(evaluate("3 + 4 * 5"), 3 + 4 * 5)

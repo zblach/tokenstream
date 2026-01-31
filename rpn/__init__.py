@@ -38,22 +38,22 @@ def evaluate(expression: str) -> float:
             case Number(value):
                 values.append(value)
             case Operator(operator) if len(values) >= 2:
-                right, left = values.pop(), values.pop()
+                b, a = values.pop(), values.pop()
                 match operator:
                     case "+":
-                        values.append(left + right)
+                        values.append(a + b)
                     case "-":
-                        values.append(left - right)
+                        values.append(a - b)
                     case "*":
-                        values.append(left * right)
+                        values.append(a * b)
                     case "/":
-                        values.append(left / right)
+                        values.append(a / b)
             case Invalid():
                 raise InvalidTokenError(token)
             case _:
                 raise UnexpectedTokenError(token)
 
     if len(values) != 1:
-        raise UnexpectedEndOfExpressionError()
+        raise UnexpectedEndOfExpressionError(Number(values.pop(), 0, len(values)))
 
     return values.pop()

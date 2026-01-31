@@ -1,6 +1,9 @@
+from enum import StrEnum
 import re
 from typing import (
+    Any,
     Iterator,
+    List,
     Literal,
     LiteralString,
     Optional,
@@ -8,11 +11,53 @@ from typing import (
     Union,
     get_args,
     cast,
+    overload,
 )
 
 from tokenizer import FLOAT_PATTERN, TokenStream, Number, Invalid, Token, TokenError
 
 # String literal types for operators and parentheses, used for typing
+
+from re import Pattern
+
+
+class RegexEnum(StrEnum):
+    @overload
+    def __new__(cls, patterns: Pattern[str]) -> "RegexEnum": ...
+
+    @overload
+    def __new__(cls, *patterns: str) -> "RegexEnum": ...
+
+    def __new__(cls, patterns: Union[List[str], Pattern[str]]) -> "RegexEnum":
+        obj = object.__new__(cls)
+
+        if len(patterns) == 1 and isinstance(patterns[0], Pattern):
+            obj.regex = patterns[0]
+        else:
+            obj.regex = re.compile(
+                "|".join(re.escape(p) for p in patterns if isinstance(p, str))
+            )
+
+        obj._value_ = patterns
+        return obj
+
+    @classmethod
+    def match(cls, string: str) -> Optional[tuple["RegexEnum", str]]:
+        for item in cls:
+            if match := item.regex.match(string):
+                return item, match.group()
+        return None
+
+
+class TokenLiterals(RegexEnum):
+    NUMBER = FLOAT_PATTERN
+    PLUS = "+"
+    MINUS = "-"
+    MULTIPLY = "*"
+    DIVIDE = "/"
+    POWER = "**", "^"
+    PARENTHESIS_OPEN = "("
+    PARENTHESIS_CLOSE = ")"
 
 
 Operators = Literal["+", "-", "*", "/", "**", "^"]
@@ -37,8 +82,11 @@ TokenType = Number | Operator | Parenthesis | Invalid
 
 
 class UnexpectedEndOfExpressionError(ValueError):
-    def __init__(self):
-        super().__init__("Unexpected end of expression")
+    def __init__(self, token: Optional[Token[Any]] = None):
+        if token is not None:
+            super().__init__(f"Unexpected end of expression at token: '{token}'")
+        else:
+            super().__init__("Unexpected end of expression")
 
 
 # Tokenizer
